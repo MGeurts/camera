@@ -1,11 +1,12 @@
 <?php
 
+use App\Http\Controllers\CameraController;
 use Illuminate\Support\Facades\Route;
 
-Route::controller(App\Http\Controllers\CameraController::class)->group(function (): void {
-    Route::get('/',  'index')->name('cameras.index');
+Route::controller(CameraController::class)->group(function (): void {
+    Route::get('/', 'index')->name('cameras.index');
 
-    Route::get('/cameras/{id}',  'show')->where('id', '[0-9]+')->name('cameras.show');
+    Route::get('/cameras/{id}', 'show')->where('id', '[0-9]+')->name('cameras.show');
 
     Route::get('/cameras/{id}/snapshot', 'snapshot')->where('id', '[0-9]+')->name('cameras.snapshot');
 

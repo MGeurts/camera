@@ -32,17 +32,17 @@
         --bg-panel:     #13161e;
         --bg-card:      #181b25;
         --bg-input:     #1e2230;
-        --border:       #2a2f42;
-        --border-hi:    #3a4060;
-        --text-primary: #dde2f0;
-        --text-secondary:#98a0b8;
-        --text-muted:   #6070a0;
-        --text-dim:     #3a4060;
+        --border:       #2e3448;
+        --border-hi:    #4a5278;
+        --text-primary: #eceff8;
+        --text-secondary:#b8c0d8;
+        --text-muted:   #7e8aaa;
+        --text-dim:     #4a5278;
         --shadow:       rgba(0,0,0,0.5);
         --scanline:     rgba(0,0,0,0.07);
-        --ok-text:      #22d47a;
-        --warn-text:    #f0a030;
-        --danger-text:  #ff3355;
+        --ok-text:      #2edc82;
+        --warn-text:    #f5aa38;
+        --danger-text:  #ff4466;
     }
 
     /* ── LIGHT THEME ── */
@@ -284,7 +284,7 @@
 function updateClock() {
     const n = new Date(), p = x => String(x).padStart(2,'0');
     document.getElementById('header-clock').textContent =
-        `${n.getFullYear()}/${p(n.getMonth()+1)}/${p(n.getDate())}  ${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
+        `${p(n.getDate())}-${p(n.getMonth() + 1)}-${n.getFullYear()}  ${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
 }
 setInterval(updateClock, 1000); updateClock();
 

@@ -26,8 +26,7 @@
  * - stream:        'main' (high quality) or 'sub' (low quality)
  * - location:      'Interior' or 'Exterior' (used for grouping in the UI)
  * - enabled:       true/false (set to false to disable a camera without removing it from the config)
- *
-*/
+ */
 $cameras = [];
 
 for ($i = 1; $i <= 24; $i++) {
@@ -43,17 +42,17 @@ for ($i = 1; $i <= 24; $i++) {
     }
 
     $cameras[] = [
-        'id'        => $i,
-        'name'      => env("CAMERA_{$i}_NAME", "Camera {$i}"),
-        'ip'        => $host,
+        'id' => $i,
+        'name' => env("CAMERA_{$i}_NAME", "Camera {$i}"),
+        'ip' => $host,
         'rtsp_port' => (int) env("CAMERA_{$i}_RTSP_PORT", env('CAMERA_DEFAULT_RTSP_PORT', 554)),
         'http_port' => (int) env("CAMERA_{$i}_HTTP_PORT", env('CAMERA_DEFAULT_HTTP_PORT', 80)),
-        'username'  => env("CAMERA_{$i}_USERNAME", env('CAMERA_DEFAULT_USERNAME', 'admin')),
-        'password'  => env("CAMERA_{$i}_PASSWORD", env('CAMERA_DEFAULT_PASSWORD', '')),
-        'channel'   => (int) env("CAMERA_{$i}_CHANNEL", 1),
-        'stream'    => env("CAMERA_{$i}_STREAM", 'sub'),
-        'location'  => env("CAMERA_{$i}_LOCATION", 'Exterior'),
-        'enabled'   => $enabled,
+        'username' => env("CAMERA_{$i}_USERNAME", env('CAMERA_DEFAULT_USERNAME', 'admin')),
+        'password' => env("CAMERA_{$i}_PASSWORD", env('CAMERA_DEFAULT_PASSWORD', '')),
+        'channel' => (int) env("CAMERA_{$i}_CHANNEL", 1),
+        'stream' => env("CAMERA_{$i}_STREAM", 'sub'),
+        'location' => env("CAMERA_{$i}_LOCATION", 'Exterior'),
+        'enabled' => $enabled,
     ];
 }
 
