@@ -45,12 +45,24 @@
             flex: 1;
             min-height: 0;
             align-items: start;
+            /* cap at available viewport height so nothing overflows */
+            max-height: 100%;
+            overflow: hidden;
         }
 
         @media(max-width:860px) {
             .single-layout {
                 grid-template-columns: 1fr;
             }
+        }
+
+        /* ── Feed column ── */
+        .feed-col {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            /* fill vertically but never taller than the viewport area */
+            max-height: calc(100vh - var(--header-h) - 80px);
         }
 
         /* ── Feed ── */
@@ -60,6 +72,9 @@
             border: 1px solid var(--border);
             border-radius: 5px;
             overflow: hidden;
+            /* shrink to fit available height while keeping 16:9 */
+            flex: 1;
+            min-height: 0;
         }
 
         [data-theme="dark"] .feed-wrap::before,
@@ -89,13 +104,14 @@
         }
 
         /*
-     * CONTAIN: the image is never cropped — source aspect ratio always respected.
-     * Black bars appear if the source ratio differs from 16:9.
+     * CONTAIN: source aspect ratio always respected, never cropped.
+     * Width AND height are 100% of the wrap — the wrap is the constraint.
+     * object-fit:contain adds black bars if the source ratio differs.
      */
         .feed-img {
             display: block;
             width: 100%;
-            aspect-ratio: 16 / 9;
+            height: 100%;
             object-fit: contain;
             background: #000;
         }
@@ -294,7 +310,7 @@
     <div class="single-layout">
 
         {{-- Feed --}}
-        <div style="display:flex;flex-direction:column;gap:0;">
+        <div class="feed-col">
             <div class="feed-wrap">
                 <img class="feed-img" id="feed-a" src="{{ route('cameras.snapshot', $camera['id']) }}?t={{ time() }}" alt="{{ $camera['name'] }}" style="z-index:2; position:relative;" />
                 <img class="feed-img" id="feed-b" alt="{{ $camera['name'] }}" style="z-index:1; position:absolute; inset:0; width:100%; height:100%;" />
