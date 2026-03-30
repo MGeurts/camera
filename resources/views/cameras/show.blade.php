@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', $camera['name'] . ' — HIKVISION')
+@section('title', 'Camera Dashboard - ' . $camera['name'])
 
 @section('extra-styles')
     <style>
@@ -301,14 +301,12 @@
 @endsection
 
 @section('content')
-
     <div class="back-nav">
         <a class="back-link" href="{{ route('cameras.index') }}">← GRID</a>
         <span class="breadcrumb">/ <span>{{ strtoupper($camera['name']) }}</span></span>
     </div>
 
     <div class="single-layout">
-
         {{-- Feed --}}
         <div class="feed-col">
             <div class="feed-wrap">
@@ -381,7 +379,6 @@
 
         </div>
     </div>
-
 @endsection
 
 @section('scripts')
@@ -537,8 +534,7 @@
 
         /* ── Init ── */
         document.getElementById('save-btn').disabled = true; // enabled on first successful frame
-        document.getElementById('refresh-rate-label').textContent =
-            REFRESH_MS >= 60000 ? '1m' : (REFRESH_MS / 1000) + 's';
+        document.getElementById('refresh-rate-label').textContent = REFRESH_MS >= 60000 ? '1m' : (REFRESH_MS / 1000) + 's';
         startRefresh();
     </script>
 @endsection

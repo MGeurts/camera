@@ -25,14 +25,14 @@ class CameraService
         try {
             $url = "http://{$camera['ip']}:{$camera['http_port']}/ISAPI/Streaming/channels/{$camera['channel']}01/picture";
 
-            $response = Http::withBasicAuth($camera['username'], $camera['password'])
-                ->timeout(5)->withOptions(['verify' => false])->get($url);
+            $response = Http::withBasicAuth($camera['username'], $camera['password'])->timeout(5)->withOptions(['verify' => false])->get($url);
+
             if ($response->successful()) {
                 return $response->body();
             }
 
-            $response = Http::withDigestAuth($camera['username'], $camera['password'])
-                ->timeout(5)->withOptions(['verify' => false])->get($url);
+            $response = Http::withDigestAuth($camera['username'], $camera['password'])->timeout(5)->withOptions(['verify' => false])->get($url);
+
             if ($response->successful()) {
                 return $response->body();
             }
@@ -53,14 +53,13 @@ class CameraService
         try {
             $url = "http://{$camera['ip']}:{$camera['http_port']}/ISAPI/Streaming/channels/{$camera['channel']}01/picture";
 
-            $res = Http::withBasicAuth($camera['username'], $camera['password'])
-                ->timeout(3)->withOptions(['verify' => false])->get($url);
+            $res = Http::withBasicAuth($camera['username'], $camera['password'])->timeout(3)->withOptions(['verify' => false])->get($url);
+
             if ($res->successful()) {
                 return true;
             }
 
-            $res = Http::withDigestAuth($camera['username'], $camera['password'])
-                ->timeout(3)->withOptions(['verify' => false])->get($url);
+            $res = Http::withDigestAuth($camera['username'], $camera['password'])->timeout(3)->withOptions(['verify' => false])->get($url);
 
             return $res->successful();
         } catch (\Throwable) {
@@ -78,12 +77,10 @@ class CameraService
         $url = "http://{$camera['ip']}:{$camera['http_port']}/ISAPI/System/deviceInfo";
 
         try {
-            $res = Http::withBasicAuth($camera['username'], $camera['password'])
-                ->timeout(5)->withOptions(['verify' => false])->get($url);
+            $res = Http::withBasicAuth($camera['username'], $camera['password'])->timeout(5)->withOptions(['verify' => false])->get($url);
 
             if (! $res->successful()) {
-                $res = Http::withDigestAuth($camera['username'], $camera['password'])
-                    ->timeout(5)->withOptions(['verify' => false])->get($url);
+                $res = Http::withDigestAuth($camera['username'], $camera['password'])->timeout(5)->withOptions(['verify' => false])->get($url);
             }
 
             if ($res->successful()) {

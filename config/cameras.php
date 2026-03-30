@@ -29,7 +29,9 @@
  */
 $cameras = [];
 
-for ($i = 1; $i <= 24; $i++) {
+$cameras_maximum = 24;
+
+for ($i = 1; $i <= $cameras_maximum; $i++) {
     $host = env("CAMERA_{$i}_IP");
 
     if (empty($host)) {
@@ -64,5 +66,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'cameras' => $cameras,
+
+    'snapshot_refresh' => 3000, // milliseconds
 
 ];
