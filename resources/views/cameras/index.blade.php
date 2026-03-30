@@ -198,6 +198,11 @@
 }
 #fs-overlay.active { display: flex; }
 
+/* Hide header and main content while fullscreen is active.
+   #fs-overlay and #fs-quit are direct <body> children so they are unaffected. */
+body.fs-active .site-header,
+body.fs-active .main-content { display: none; }
+
 /* Fullscreen grid — same solver as main grid, recalculated on enter */
 #fs-grid {
     --cols: 2;
@@ -208,7 +213,8 @@
     width: 100%; height: 100%;
     padding: var(--gap);
     box-sizing: border-box;
-    align-content: start;
+    /* center rows vertically so they never bleed under any chrome */
+    align-content: center;
 }
 
 /* Each fullscreen cell — pure feed, no info bar, no border radius */
@@ -336,12 +342,27 @@
 
 </div>
 
-{{-- ═══ FULLSCREEN OVERLAY ═══════════════════════════════════════ --}}
-<div id="fs-overlay">
+@endsection
+
+@section('head')
+{{-- Fullscreen overlay — must be a direct child of <body>, NOT inside .main-content --}}
+<style>
+#fs-overlay, #fs-quit { font-family: 'JetBrains Mono', monospace; }
+</style>
+<div id="fs-overlay" style="display:none;position:fixed;inset:0;z-index:10000;background:#000;flex-direction:column;">
     <div id="fs-grid"></div>
 </div>
-<button id="fs-quit" onclick="exitFullscreen()">✕ QUIT FULLSCREEN</button>
-
+<button id="fs-quit" onclick="exitFullscreen()" style="
+    display:none;
+    position:fixed;bottom:24px;right:24px;z-index:10001;
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+    letter-spacing:2px;text-transform:uppercase;
+    padding:10px 20px;border-radius:4px;cursor:pointer;
+    background:rgba(0,0,0,0.75);border:1px solid rgba(255,255,255,0.25);
+    color:rgba(255,255,255,0.85);backdrop-filter:blur(6px);
+    transition:opacity 0.4s,border-color 0.2s,color 0.2s;opacity:0;">
+    ✕ QUIT FULLSCREEN
+</button>
 @endsection
 
 @section('scripts')
@@ -570,17 +591,20 @@ function syncFsCell(id, src) {
 
 function showQuitBtn() {
     const btn = document.getElementById('fs-quit');
-    btn.classList.add('visible');
+    btn.style.opacity = '1';
     clearTimeout(fsHideTimer);
-    fsHideTimer = setTimeout(() => btn.classList.remove('visible'), 2500);
+    fsHideTimer = setTimeout(() => { btn.style.opacity = '0'; }, 2500);
 }
 
 function enterFullscreen() {
     buildFsGrid();
     layoutFsGrid();
 
-    const overlay = document.getElementById('fs-overlay');
-    overlay.classList.add('active');
+    const overlay  = document.getElementById('fs-overlay');
+    const quitBtn  = document.getElementById('fs-quit');
+    overlay.style.display = 'flex';
+    quitBtn.style.display  = 'block';
+    document.body.classList.add('fs-active');
     fsActive = true;
 
     // Request browser fullscreen on the overlay element
@@ -595,8 +619,11 @@ function enterFullscreen() {
 
 function exitFullscreen() {
     fsActive = false;
-    document.getElementById('fs-overlay').classList.remove('active');
-    document.getElementById('fs-quit').classList.remove('visible');
+    document.getElementById('fs-overlay').style.display = 'none';
+    const qb = document.getElementById('fs-quit');
+    qb.style.opacity  = '0';
+    qb.style.display  = 'none';
+    document.body.classList.remove('fs-active');
 
     if (document.fullscreenElement || document.webkitFullscreenElement) {
         if (document.exitFullscreen)            document.exitFullscreen();
