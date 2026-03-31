@@ -1,6 +1,6 @@
-# 🎥 Hikvision Surveillance Dashboard
+# 🎥 Hikvision Camera Surveillance Dashboard
 
-A clean, professional **Laravel 13** application for monitoring your (Hikvision) IP cameras in real time.
+A clean, professional **Laravel 13** application for monitoring your Hikvision IP cameras in real time.
 Features a tactical light- or dark-theme UI with live MJPEG snapshot streaming, auto-refresh, multi-camera grid layouts, and a fullscreen single-camera view.
 
 ---
