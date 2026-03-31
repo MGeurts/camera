@@ -1,5 +1,15 @@
 # 🎥 Hikvision Camera Surveillance Dashboard
 
+![](https://img.shields.io/badge/PHP-8.2-informational?style=flat&logo=php&color=4f5b93)
+![](https://img.shields.io/badge/Laravel-13-informational?style=flat&logo=laravel&color=ef3b2d)
+
+![Latest Stable Version](https://img.shields.io/github/release/MGeurts/camera)
+
+[![Donate via PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg?logo=paypal)](https://www.paypal.me/MGeurtsKREAWEB)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-orange.svg?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/MGeurts)
+
+## About this project
+
 A clean, professional **Laravel 13** application for monitoring your Hikvision IP cameras in real time.
 Features a tactical light- or dark-theme UI with live MJPEG snapshot streaming, auto-refresh, multi-camera grid layouts, and a fullscreen single-camera view.
 
