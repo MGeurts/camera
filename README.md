@@ -17,7 +17,9 @@ Features a tactical light- or dark-theme UI with live MJPEG snapshot streaming, 
 
 ## Screenshots
 
-<img src="https://github.com/MGeurts/camera/blob/main/public/camera.webp" class="rounded" alt="Camera"/>
+<img src="https://github.com/MGeurts/camera/blob/main/public/camera.webp" class="rounded" alt="Cameras"/>
+<img src="https://github.com/MGeurts/camera/blob/main/public/camera-fullscreen.webp" class="rounded" alt="Camera-fullscreen"/>
+<img src="https://github.com/MGeurts/camera/blob/main/public/camerasingle.webp" class="rounded" alt="Camera-single"/>
 
 The dashboard shows all cameras in a configurable grid (1×, 2×, 3×, 4×, 5x or 6x columns) with:
 
