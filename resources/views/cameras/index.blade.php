@@ -28,9 +28,12 @@
             LIVE FEEDS
             <small>{{ $cameras->count() }} CAMERA{{ $cameras->count() !== 1 ? 'S' : '' }} CONFIGURED</small>
         </div>
+        <div class="page-center">
+            <button class="btn" onclick="openLogViewer()" title="Open Log Viewer">🔍 LOG VIEWER</button>
+        </div>
         <div class="page-actions">
-            <button class="btn" onclick="refreshAll()">↻ REFRESH ALL</button>
-            <button class="btn" onclick="enterFullscreen()" title="Fullscreen">⛶ FULLSCREEN</button>
+            <button class="btn" onclick="refreshAll()" title="Refresh all">↻ REFRESH ALL</button>
+            <button class="btn" onclick="enterFullscreen()" title="Go Fullscreen">⛶ FULLSCREEN</button>
         </div>
     </div>
 
@@ -48,7 +51,7 @@
                 <div class="toggle-track"></div>
                 <div class="toggle-thumb"></div>
             </label>
-            <select class="rate-select" id="rate-select" onchange="setRefreshRate(parseInt(this.value))">
+            <select class="rate-select" id="rate-select" onchange="setRefreshRate(parseInt(this.value))" title="Select polling interval">
                 <option value="1000">1s</option>
                 <option value="2000">2s</option>
                 <option value="3000" selected>3s</option>
@@ -94,7 +97,7 @@
         @empty
             <div class="empty-state">
                 <h2>NO CAMERAS CONFIGURED</h2>
-                <p>Add your Hikvision cameras in <code>config/cameras.php</code><br>
+                <p>Add your Hikvision cameras in <code>config/cameras.php</code><br/>
                 or set environment variables in your <code>.env</code> file.</p>
             </div>
         @endforelse

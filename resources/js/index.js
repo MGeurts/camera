@@ -244,6 +244,10 @@ function exitFullscreen() {
     }
 }
 
+function openLogViewer() {
+    window.open('/log-viewer/', '_blank').focus();
+}
+
 document.addEventListener('fullscreenchange',       onFsChange);
 document.addEventListener('webkitfullscreenchange', onFsChange);
 function onFsChange() {
@@ -282,3 +286,4 @@ window.refreshAll        = refreshAll;
 window.enterFullscreen   = enterFullscreen;
 window.exitFullscreen    = exitFullscreen;
 window.onFirstLoad       = onFirstLoad;
+window.openLogViewer     = openLogViewer;
