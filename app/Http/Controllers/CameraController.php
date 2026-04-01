@@ -55,14 +55,7 @@ class CameraController extends Controller
 
     public function allStatus(): JsonResponse
     {
-        $statuses = $this->cameras->all()->map(fn ($c) => [
-            'id' => $c['id'],
-            'name' => $c['name'],
-            'online' => $this->cameras->isOnline($c),
-            'location' => $c['location'] ?? '',
-        ]);
-
-        return response()->json($statuses);
+        return response()->json($this->cameras->allStatus());
     }
 
     public function deviceInfo(int $id): JsonResponse

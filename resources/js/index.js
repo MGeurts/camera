@@ -108,12 +108,36 @@ function startAutoRefresh() {
 function toggleAutoRefresh(enabled) {
     autoRefresh = enabled;
     enabled ? startAutoRefresh() : Object.values(refreshTimers).forEach(clearInterval);
+    updateResetBtn();
 }
+
+const DEFAULT_REFRESH_MS = 3000;
 
 function setRefreshRate(ms) {
     REFRESH_MS = ms;
     localStorage.setItem('hik-refresh', ms);
     if (autoRefresh) startAutoRefresh();
+    updateResetBtn();
+}
+
+function updateResetBtn() {
+    const btn = document.getElementById('rate-reset-btn');
+    if (btn) btn.disabled = (REFRESH_MS === DEFAULT_REFRESH_MS && autoRefresh);
+}
+
+function resetRefreshRate() {
+    REFRESH_MS = DEFAULT_REFRESH_MS;
+    localStorage.removeItem('hik-refresh');
+    const sel = document.getElementById('rate-select');
+    if (sel) sel.value = DEFAULT_REFRESH_MS;
+    // Re-enable auto-refresh if it was paused
+    if (!autoRefresh) {
+        autoRefresh = true;
+        const checkbox = document.querySelector('.toggle-sw input');
+        if (checkbox) checkbox.checked = true;
+    }
+    startAutoRefresh();
+    updateResetBtn();
 }
 
 function updateTimestamp(id) {
@@ -244,10 +268,6 @@ function exitFullscreen() {
     }
 }
 
-function openLogViewer() {
-    window.open('/log-viewer/', '_blank').focus();
-}
-
 document.addEventListener('fullscreenchange',       onFsChange);
 document.addEventListener('webkitfullscreenchange', onFsChange);
 function onFsChange() {
@@ -277,13 +297,14 @@ if (savedRate) {
 startAutoRefresh();
 pollAllStatus();
 setInterval(pollAllStatus, 30000);
+updateResetBtn();
 
 /* Expose functions called by Blade onclick attributes */
 window.setColumns        = setColumns;
 window.toggleAutoRefresh = toggleAutoRefresh;
 window.setRefreshRate    = val => setRefreshRate(parseInt(val));
+window.resetRefreshRate  = resetRefreshRate;
 window.refreshAll        = refreshAll;
 window.enterFullscreen   = enterFullscreen;
 window.exitFullscreen    = exitFullscreen;
 window.onFirstLoad       = onFirstLoad;
-window.openLogViewer     = openLogViewer;

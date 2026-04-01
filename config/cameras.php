@@ -69,4 +69,10 @@ return [
 
     'snapshot_refresh' => 3000, // milliseconds
 
+    /*
+     * Set to true if your cameras use valid HTTPS certificates.
+     * Leave false (default) for the typical self-signed / HTTP setup.
+     */
+    'verify_ssl' => env('CAMERA_VERIFY_SSL', false),
+
 ];
