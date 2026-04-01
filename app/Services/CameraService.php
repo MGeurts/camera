@@ -73,7 +73,7 @@ class CameraService
         }
 
         // Split cameras into those with a known auth method and unknowns.
-        $known   = $cameras->filter(fn ($c) => $this->cachedAuth($c['id']) !== null);
+        $known = $cameras->filter(fn ($c) => $this->cachedAuth($c['id']) !== null);
         $unknown = $cameras->filter(fn ($c) => $this->cachedAuth($c['id']) === null);
 
         $results = collect();
@@ -96,7 +96,7 @@ class CameraService
 
             foreach ($known as $camera) {
                 $response = $responses["k_{$camera['id']}"] ?? null;
-                $online   = $response instanceof Response && $response->successful();
+                $online = $response instanceof Response && $response->successful();
 
                 // If the cached method suddenly stopped working, evict the cache
                 // so the next poll re-discovers the correct method.
@@ -104,7 +104,7 @@ class CameraService
                     $this->forgetAuth($camera['id']);
                     Log::info('Camera auth cache evicted — will re-probe on next poll', [
                         'camera' => $camera['name'],
-                        'ip'     => $camera['ip'],
+                        'ip' => $camera['ip'],
                     ]);
                 }
 
@@ -133,7 +133,7 @@ class CameraService
             });
 
             foreach ($unknown as $camera) {
-                $basicOk  = ($responses["b_{$camera['id']}"] ?? null) instanceof Response
+                $basicOk = ($responses["b_{$camera['id']}"] ?? null) instanceof Response
                          && $responses["b_{$camera['id']}"]->successful();
                 $digestOk = ($responses["d_{$camera['id']}"] ?? null) instanceof Response
                          && $responses["d_{$camera['id']}"]->successful();
@@ -162,22 +162,22 @@ class CameraService
      */
     public function deviceInfo(array $camera): array
     {
-        $url      = $this->isApiUrl($camera, 'System/deviceInfo');
+        $url = $this->isApiUrl($camera, 'System/deviceInfo');
         $response = $this->request($camera, $url);
 
         if ($response === null) {
             return [
                 'success' => false,
-                'status'  => 0,
-                'reason'  => "Connection failed — camera HTTP port {$camera['http_port']} not reachable at {$camera['ip']}",
+                'status' => 0,
+                'reason' => "Connection failed — camera HTTP port {$camera['http_port']} not reachable at {$camera['ip']}",
             ];
         }
 
         if (! $response->successful()) {
             return [
                 'success' => false,
-                'status'  => $response->status(),
-                'reason'  => match ($response->status()) {
+                'status' => $response->status(),
+                'reason' => match ($response->status()) {
                     401 => 'Authentication failed (HTTP 401) — check username and password in config/cameras.php',
                     403 => 'Access denied (HTTP 403) — the camera account may lack Remote access permission',
                     404 => 'Endpoint not found (HTTP 404) — this camera model may not support ISAPI device info',
@@ -203,8 +203,8 @@ class CameraService
     private function request(array $camera, string $url, int $timeout = 5): ?Response
     {
         $cachedAuth = $this->cachedAuth($camera['id']);
-        $primary    = $cachedAuth ?? 'basic';
-        $fallback   = $primary === 'basic' ? 'digest' : 'basic';
+        $primary = $cachedAuth ?? 'basic';
+        $fallback = $primary === 'basic' ? 'digest' : 'basic';
 
         try {
             $response = $this->makeRequest($camera, $url, $primary, $timeout);
@@ -238,19 +238,19 @@ class CameraService
 
             Log::warning('Camera request failed', [
                 'camera' => $camera['name'],
-                'ip'     => $camera['ip'],
-                'url'    => $url,
+                'ip' => $camera['ip'],
+                'url' => $url,
                 'status' => $response->status(),
-                'auth'   => $primary,
+                'auth' => $primary,
             ]);
 
             return null;
 
         } catch (\Throwable $e) {
             Log::error('Camera request exception', [
-                'camera'  => $camera['name'],
-                'ip'      => $camera['ip'],
-                'url'     => $url,
+                'camera' => $camera['name'],
+                'ip' => $camera['ip'],
+                'url' => $url,
                 'message' => $e->getMessage(),
             ]);
 
@@ -302,9 +302,9 @@ class CameraService
     private function statusEntry(array $camera, bool $online): array
     {
         return [
-            'id'       => $camera['id'],
-            'name'     => $camera['name'],
-            'online'   => $online,
+            'id' => $camera['id'],
+            'name' => $camera['name'],
+            'online' => $online,
             'location' => $camera['location'] ?? '',
         ];
     }
@@ -321,22 +321,22 @@ class CameraService
         if ($xml === false) {
             Log::warning('Camera returned invalid XML for deviceInfo', [
                 'camera' => $camera['name'],
-                'ip'     => $camera['ip'],
+                'ip' => $camera['ip'],
             ]);
 
             return [
                 'success' => false,
-                'status'  => 0,
-                'reason'  => 'Invalid XML returned by camera — firmware may not support this endpoint',
+                'status' => 0,
+                'reason' => 'Invalid XML returned by camera — firmware may not support this endpoint',
             ];
         }
 
         return [
-            'success'     => true,
-            'model'       => (string) ($xml->model           ?? 'Unknown'),
-            'serial'      => (string) ($xml->serialNumber    ?? 'Unknown'),
-            'firmware'    => (string) ($xml->firmwareVersion ?? 'Unknown'),
-            'device_name' => (string) ($xml->deviceName      ?? $camera['name']),
+            'success' => true,
+            'model' => (string) ($xml->model ?? 'Unknown'),
+            'serial' => (string) ($xml->serialNumber ?? 'Unknown'),
+            'firmware' => (string) ($xml->firmwareVersion ?? 'Unknown'),
+            'device_name' => (string) ($xml->deviceName ?? $camera['name']),
         ];
     }
 

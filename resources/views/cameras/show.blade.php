@@ -95,7 +95,7 @@
 @section('scripts')
     <script>
         window.HIK = {
-            camId:    {{ $camera['id'] }},
+            camId:     {{ $camera['id'] }},
             refreshMs: {{ $refresh }},
             httpPort:  {{ $camera['http_port'] }},
         };

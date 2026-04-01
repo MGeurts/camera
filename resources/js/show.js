@@ -154,12 +154,11 @@ async function loadDeviceInfo() {
 
 /* ── Init ── */
 document.getElementById('save-btn').disabled = true;
-document.getElementById('refresh-rate-label').textContent =
-    REFRESH_MS >= 60000 ? '1m' : (REFRESH_MS / 1000) + 's';
+document.getElementById('refresh-rate-label').textContent = REFRESH_MS >= 60000 ? '1m' : (REFRESH_MS / 1000) + 's';
 startRefresh();
 
 /* Expose functions called by Blade onclick attributes */
-window.refreshNow    = refreshNow;
-window.saveSnapshot  = saveSnapshot;
-window.togglePause   = togglePause;
+window.refreshNow     = refreshNow;
+window.saveSnapshot   = saveSnapshot;
+window.togglePause    = togglePause;
 window.loadDeviceInfo = loadDeviceInfo;

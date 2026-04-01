@@ -228,7 +228,7 @@ body.fs-active .main-content { display: none; }
     animation: blink 1.2s ease-in-out infinite;
 }
 #fs-hud-count { font-weight: 700; }
-#fs-hud-clock { color: #8892aa; }
+#fs-hud-clock { color: #e0e6f0; }
 
 /* ── Camera grid ── */
 #fs-grid {
