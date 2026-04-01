@@ -203,16 +203,45 @@
 body.fs-active .site-header,
 body.fs-active .main-content { display: none; }
 
+/* ── HUD bar — solid, always readable ── */
+#fs-hud {
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    height: 40px;
+    background: #111418;
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 1.5px;
+    color: #c8d0e8;
+    user-select: none;
+}
+.fs-hud-left { display: flex; align-items: center; gap: 16px; }
+.fs-hud-rec  {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    color: #ff4466;
+}
+.fs-hud-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #ff4466; box-shadow: 0 0 6px #ff4466;
+    animation: blink 1.2s ease-in-out infinite;
+}
+#fs-hud-count { font-weight: 700; }
+#fs-hud-clock { color: #8892aa; }
+
+/* ── Camera grid ── */
 #fs-grid {
     --cols: 2;
     --gap:  6px;
     display: grid;
     grid-template-columns: repeat(var(--cols), 1fr);
     gap: var(--gap);
-    width: 100%; height: 100%;
+    flex: 1;
     padding: var(--gap);
     box-sizing: border-box;
     align-content: center;
+    min-height: 0;
 }
 
 .fs-cell {
@@ -231,22 +260,25 @@ body.fs-active .main-content { display: none; }
     position: absolute; bottom: 6px; left: 8px; z-index: 4;
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px; font-weight: 700; letter-spacing: 2px;
-    color: rgba(255,255,255,0.6); background: rgba(0,0,0,0.5);
+    color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.65);
     padding: 2px 6px; border-radius: 2px;
     pointer-events: none;
 }
 
+/* ── Quit button — solid background, visible on appear ── */
 #fs-quit {
     position: fixed; bottom: 24px; right: 24px; z-index: 10001;
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px; font-weight: 700; letter-spacing: 2px;
     text-transform: uppercase;
-    padding: 10px 20px; border-radius: 4px; cursor: pointer;
-    background: rgba(0,0,0,0.75);
-    border: 1px solid rgba(255,255,255,0.25);
-    color: rgba(255,255,255,0.85);
-    backdrop-filter: blur(6px);
-    transition: opacity 0.4s, border-color 0.2s, color 0.2s;
+    padding: 10px 22px; border-radius: 4px; cursor: pointer;
+    background: #1a1e28;
+    border: 1px solid rgba(255,255,255,0.30);
+    color: #e0e6f0;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.8);
+    transition: opacity 0.35s, border-color 0.2s, color 0.2s, background 0.2s;
     opacity: 0;
+    pointer-events: none;
 }
-#fs-quit:hover { border-color: #e02040; color: #ff4466; }
+#fs-quit.fs-quit-visible { opacity: 1; pointer-events: auto; }
+#fs-quit:hover { background: #2a1020; border-color: #ff4466; color: #ff4466; }

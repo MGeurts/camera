@@ -12,21 +12,42 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-/* ── Global camera status poll ── */
-async function pollStatus() {
-    try {
-        const data = await fetch('/api/cameras/status').then(r => r.json());
-        const online = data.filter(c => c.online).length;
-        const el = document.getElementById('online-count');
-        if (!el) return;
-        el.textContent  = online;
-        el.style.color  = online === data.length ? 'var(--ok-text)'
-                        : online === 0           ? 'var(--danger-text)'
-                        :                          'var(--warn-text)';
-    } catch (_) {}
+/* ── Header camera count ─────────────────────────────────────
+   On the grid page: derived from badge DOM so it always matches
+   what the badges show — called by markOnline/markOffline in index.js.
+   On the show page: one-shot API fetch on load (no badges to count).
+   ─────────────────────────────────────────────────────────── */
+function syncHeaderCount() {
+    const countEl = document.getElementById('online-count');
+    const totalEl = document.getElementById('total-count');
+    if (!countEl || !totalEl) return;
+    const total  = parseInt(totalEl.textContent) || 0;
+    if (total === 0) return;
+    const online = document.querySelectorAll('.badge-online').length;
+    countEl.textContent = online;
+    countEl.style.color = online === total ? 'var(--ok-text)'
+                        : online === 0     ? 'var(--danger-text)'
+                        :                    'var(--warn-text)';
 }
-pollStatus();
-setInterval(pollStatus, 30000);
+window.syncHeaderCount = syncHeaderCount;
+
+/* Show-page fallback: no badges exist, do a single API call */
+(function () {
+    if (document.querySelector('.camera-card')) return; // index.js handles it
+    fetch('/api/cameras/status')
+        .then(r => r.json())
+        .then(data => {
+            const online  = data.filter(c => c.online).length;
+            const countEl = document.getElementById('online-count');
+            const totalEl = document.getElementById('total-count');
+            if (!countEl || !totalEl) return;
+            countEl.textContent = online;
+            countEl.style.color = online === data.length ? 'var(--ok-text)'
+                                : online === 0           ? 'var(--danger-text)'
+                                :                          'var(--warn-text)';
+        })
+        .catch(() => {});
+})();
 
 /* ── Theme toggle ── */
 function applyTheme(t) {
@@ -42,7 +63,8 @@ function toggleTheme() {
     );
 }
 
-/* Apply saved theme immediately */
+/* Sync the toggle label with whatever theme was already applied by the
+   inline <script> in <head> — must run after the DOM is ready. */
 applyTheme(localStorage.getItem('hik-theme') || 'dark');
 
 /* Expose to inline onclick handlers in the Blade layout */

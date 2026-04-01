@@ -2,6 +2,12 @@
    index.js  —  camera grid page
    Data injected by index.blade.php before this file loads:
      window.HIK = { cameras: [...], refreshMs: 3000 }
+
+   STATUS STRATEGY
+   No separate /api/cameras/status poll. A camera is ONLINE when
+   its image loads successfully. A camera is OFFLINE when its image
+   fails and a HEAD request to the same URL also fails.
+   Status always matches exactly what you see on screen.
    ───────────────────────────────────────────────────────────── */
 
 const CAMERAS    = window.HIK.cameras;
@@ -16,6 +22,9 @@ let autoRefresh   = true;
 let refreshTimers = {};
 let userCols      = null;
 const activeSlot  = {};
+
+/* Per-camera offline tracking */
+const offlineSince = {};  // { [id]: Date }
 
 /* ══════════════════════════════════════════════════════
    COLUMN SOLVER
@@ -68,12 +77,61 @@ function recalc() {
 }
 
 /* ══════════════════════════════════════════════════════
+   STATUS BADGE HELPERS
+══════════════════════════════════════════════════════ */
+function fmtDuration(since) {
+    const s = Math.floor((Date.now() - since.getTime()) / 1000);
+    if (s < 60)   return `${s}s`;
+    if (s < 3600) return `${Math.floor(s / 60)}m`;
+    return `${Math.floor(s / 3600)}h`;
+}
+
+function markOnline(id) {
+    delete offlineSince[id];
+    const el   = document.getElementById(`status-${id}`);
+    const card = document.getElementById(`card-${id}`);
+    if (el)   { el.textContent = '● ONLINE'; el.className = 'badge badge-online'; }
+    if (card) card.classList.remove('offline');
+    if (typeof syncHeaderCount === 'function') syncHeaderCount();
+}
+
+function markOffline(id) {
+    if (!offlineSince[id]) offlineSince[id] = new Date();
+    const el   = document.getElementById(`status-${id}`);
+    const card = document.getElementById(`card-${id}`);
+    if (el) {
+        el.textContent = `● OFFLINE ${fmtDuration(offlineSince[id])}`;
+        el.className   = 'badge badge-offline';
+    }
+    if (card) card.classList.add('offline');
+    if (typeof syncHeaderCount === 'function') syncHeaderCount();
+}
+
+/* Tick offline durations every 10 s so "OFFLINE 3m" stays fresh */
+setInterval(() => {
+    CAMERAS.forEach(c => {
+        if (!offlineSince[c.id]) return;
+        const el = document.getElementById(`status-${c.id}`);
+        if (el) el.textContent = `● OFFLINE ${fmtDuration(offlineSince[c.id])}`;
+    });
+}, 10000);
+
+/* ══════════════════════════════════════════════════════
    DOUBLE-BUFFER REFRESH
+   onload  → markOnline   (image arrived = camera is up)
+   onerror → HEAD confirm → markOffline if also fails
 ══════════════════════════════════════════════════════ */
 function onFirstLoad(id) {
-    document.getElementById(`spinner-${id}`).classList.add('gone');
+    document.getElementById(`spinner-${id}`)?.classList.add('gone');
     activeSlot[id] = 'a';
     updateTimestamp(id);
+    markOnline(id);
+}
+
+function confirmOffline(id) {
+    fetch(`/cameras/${id}/snapshot?t=${Date.now()}`, { method: 'HEAD' })
+        .then(r => { if (!r.ok) markOffline(id); })
+        .catch(() => markOffline(id));
 }
 
 function refreshFeed(id) {
@@ -81,18 +139,35 @@ function refreshFeed(id) {
     const nextSlot = slot === 'a' ? 'b' : 'a';
     const front    = document.getElementById(`feed-${slot}-${id}`);
     const back     = document.getElementById(`feed-${nextSlot}-${id}`);
+
     back.onload = () => {
         back.style.zIndex  = '2';
         front.style.zIndex = '1';
         activeSlot[id]     = nextSlot;
         updateTimestamp(id);
         syncFsCell(id, back.src);
+        markOnline(id);
     };
-    back.onerror = () => {};
+
+    back.onerror = () => {
+        /* Only confirm via HEAD if we haven't already marked it offline —
+           avoids hammering a known-dead camera with extra requests. */
+        if (!offlineSince[id]) confirmOffline(id);
+        else                   markOffline(id);
+    };
+
     back.src = `/cameras/${id}/snapshot?t=${Date.now()}`;
 }
 
-function refreshAll() { CAMERAS.forEach(c => refreshFeed(c.id)); }
+function refreshAll() {
+    CAMERAS.forEach(c => refreshFeed(c.id));
+    const btn = document.getElementById('refresh-all-btn');
+    if (btn) {
+        btn.textContent = '↻ REFRESHING…';
+        btn.disabled    = true;
+        setTimeout(() => { btn.textContent = '↻ REFRESH ALL'; btn.disabled = false; }, 1500);
+    }
+}
 
 function startAutoRefresh() {
     CAMERAS.forEach(c => {
@@ -130,7 +205,6 @@ function resetRefreshRate() {
     localStorage.removeItem('hik-refresh');
     const sel = document.getElementById('rate-select');
     if (sel) sel.value = DEFAULT_REFRESH_MS;
-    // Re-enable auto-refresh if it was paused
     if (!autoRefresh) {
         autoRefresh = true;
         const checkbox = document.querySelector('.toggle-sw input');
@@ -145,26 +219,6 @@ function updateTimestamp(id) {
     if (!el) return;
     const n = new Date(), p = x => String(x).padStart(2, '0');
     el.textContent = `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
-}
-
-/* ── Status polling ── */
-function markOnline(id) {
-    const el   = document.getElementById(`status-${id}`);
-    const card = document.getElementById(`card-${id}`);
-    if (el)   { el.textContent = '● ONLINE'; el.className = 'badge badge-online'; }
-    if (card) card.classList.remove('offline');
-}
-function markOffline(id) {
-    const el   = document.getElementById(`status-${id}`);
-    const card = document.getElementById(`card-${id}`);
-    if (el)   { el.textContent = '● OFFLINE'; el.className = 'badge badge-offline'; }
-    if (card) card.classList.add('offline');
-}
-async function pollAllStatus() {
-    try {
-        const data = await fetch('/api/cameras/status').then(r => r.json());
-        data.forEach(c => c.online ? markOnline(c.id) : markOffline(c.id));
-    } catch (_) {}
 }
 
 /* ── Click card to expand ── */
@@ -183,10 +237,11 @@ window.addEventListener('resize', () => {
 });
 
 /* ══════════════════════════════════════════════════════
-   FULLSCREEN
+   FULLSCREEN  — solid HUD bar + visible quit button
 ══════════════════════════════════════════════════════ */
 let fsActive    = false;
 let fsHideTimer = null;
+let fsHudTimer  = null;
 const fsSlot    = {};
 
 function buildFsGrid() {
@@ -211,7 +266,7 @@ function buildFsGrid() {
 function layoutFsGrid() {
     const grid   = document.getElementById('fs-grid');
     const availW = window.innerWidth  - GAP * 2;
-    const availH = window.innerHeight - GAP * 2;
+    const availH = window.innerHeight - GAP * 2 - 40; /* 40px HUD bar */
     const cols   = calcOptimalCols(availW, availH, CAM_COUNT, 0);
     grid.style.setProperty('--cols', cols);
 }
@@ -232,35 +287,51 @@ function syncFsCell(id, src) {
     back.src = src;
 }
 
+function updateFsHud() {
+    const clock   = document.getElementById('fs-hud-clock');
+    const countEl = document.getElementById('fs-hud-count');
+    if (clock) {
+        const n = new Date(), p = x => String(x).padStart(2, '0');
+        clock.textContent = `${p(n.getDate())}-${p(n.getMonth()+1)}-${n.getFullYear()}  ${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
+    }
+    if (countEl) {
+        const onlineEl = document.getElementById('online-count');
+        const totalEl  = document.getElementById('total-count');
+        if (onlineEl && totalEl) {
+            countEl.textContent = `${onlineEl.textContent} / ${totalEl.textContent} ONLINE`;
+            countEl.style.color = onlineEl.style.color;
+        }
+    }
+}
+
 function showQuitBtn() {
     const btn = document.getElementById('fs-quit');
-    btn.style.opacity = '1';
+    if (!btn) return;
+    btn.classList.add('fs-quit-visible');
     clearTimeout(fsHideTimer);
-    fsHideTimer = setTimeout(() => { btn.style.opacity = '0'; }, 2500);
+    fsHideTimer = setTimeout(() => btn.classList.remove('fs-quit-visible'), 2500);
 }
 
 function enterFullscreen() {
     buildFsGrid();
     layoutFsGrid();
-    const overlay = document.getElementById('fs-overlay');
-    const quitBtn = document.getElementById('fs-quit');
-    overlay.style.display = 'flex';
-    quitBtn.style.display = 'block';
+    document.getElementById('fs-overlay').style.display = 'flex';
     document.body.classList.add('fs-active');
     fsActive = true;
     const el = document.documentElement;
     if (el.requestFullscreen)            el.requestFullscreen();
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    updateFsHud();
+    fsHudTimer = setInterval(updateFsHud, 1000);
     showQuitBtn();
-    overlay.addEventListener('mousemove', showQuitBtn);
+    document.getElementById('fs-overlay').addEventListener('mousemove', showQuitBtn);
 }
 
 function exitFullscreen() {
     fsActive = false;
+    clearInterval(fsHudTimer);
     document.getElementById('fs-overlay').style.display = 'none';
-    const qb = document.getElementById('fs-quit');
-    qb.style.opacity = '0';
-    qb.style.display = 'none';
+    document.getElementById('fs-quit')?.classList.remove('fs-quit-visible');
     document.body.classList.remove('fs-active');
     if (document.fullscreenElement || document.webkitFullscreenElement) {
         if (document.exitFullscreen)            document.exitFullscreen();
@@ -295,8 +366,6 @@ if (savedRate) {
 }
 
 startAutoRefresh();
-pollAllStatus();
-setInterval(pollAllStatus, 30000);
 updateResetBtn();
 
 /* Expose functions called by Blade onclick attributes */

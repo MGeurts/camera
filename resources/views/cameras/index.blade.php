@@ -4,24 +4,20 @@
 @section('head')
     @vite(['resources/css/index.css'])
 
-    {{-- Fullscreen overlay — must be a direct child of
+    {{-- Fullscreen overlay — direct child of
 
-    <body>, injected before main renders --}}
-        <div id="fs-overlay" style="display:none;position:fixed;inset:0;z-index:10000;background:#000;flex-direction:column;">
+    <body> --}}
+        <div id="fs-overlay">
+            <div id="fs-hud">
+                <div class="fs-hud-left">
+                    <span class="fs-hud-rec"><span class="fs-hud-dot"></span>LIVE</span>
+                    <span id="fs-hud-count"></span>
+                </div>
+                <span id="fs-hud-clock"></span>
+            </div>
             <div id="fs-grid"></div>
         </div>
-
-        <button id="fs-quit" onclick="exitFullscreen()" style="
-            display:none;
-            position:fixed;bottom:24px;right:24px;z-index:10001;
-            font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
-            letter-spacing:2px;text-transform:uppercase;
-            padding:10px 20px;border-radius:4px;cursor:pointer;
-            background:rgba(0,0,0,0.75);border:1px solid rgba(255,255,255,0.25);
-            color:rgba(255,255,255,0.85);backdrop-filter:blur(6px);
-            transition:opacity 0.4s,border-color 0.2s,color 0.2s;opacity:0;">
-            ✕ QUIT FULLSCREEN
-        </button>
+        <button id="fs-quit" onclick="exitFullscreen()">✕ QUIT FULLSCREEN</button>
 @endsection
 
     @section('content')
@@ -31,7 +27,7 @@
                 <small>{{ $cameras->count() }} CAMERA{{ $cameras->count() !== 1 ? 'S' : '' }} CONFIGURED</small>
             </div>
             <div class="page-actions">
-                <button class="btn" onclick="refreshAll()">↻ REFRESH ALL</button>
+                <button class="btn" id="refresh-all-btn" onclick="refreshAll()">↻ REFRESH ALL</button>
                 <button class="btn" onclick="enterFullscreen()" title="Fullscreen">⛶ FULLSCREEN</button>
             </div>
         </div>
