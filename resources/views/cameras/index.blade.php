@@ -71,7 +71,7 @@
                             onload="onFirstLoad({{ $camera['id'] }})" />
                         <img id="feed-b-{{ $camera['id'] }}" alt="{{ $camera['name'] }}" style="z-index:1" />
                         <div class="feed-overlay">
-                            <span class="cam-id-tag">CAM {{ str_pad($camera['id'], 2, '0', STR_PAD_LEFT) }}</span>
+                            <span class="cam-id-tag">{{ strtoupper($camera['name']) }}</span>
                             <span class="cam-ts-tag" id="ts-{{ $camera['id'] }}">--:--:--</span>
                             <a class="expand-btn" href="{{ route('cameras.show', $camera['id']) }}" onclick="event.stopPropagation()">⤢</a>
                         </div>

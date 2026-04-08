@@ -16,15 +16,10 @@
         {{-- Feed column --}}
         <div class="feed-col">
             <div class="feed-wrap">
-                <img class="feed-img" id="feed-a"
-                    src="{{ route('cameras.snapshot', $camera['id']) }}?t={{ time() }}"
-                    alt="{{ $camera['name'] }}"
-                    style="z-index:2; position:relative;" />
-                <img class="feed-img" id="feed-b"
-                    alt="{{ $camera['name'] }}"
-                    style="z-index:1; position:absolute; inset:0; width:100%; height:100%;" />
+                <img class="feed-img" id="feed-a" src="{{ route('cameras.snapshot', $camera['id']) }}?t={{ time() }}" alt="{{ $camera['name'] }}" style="z-index:2; position:relative;" />
+                <img class="feed-img" id="feed-b" alt="{{ $camera['name'] }}" style="z-index:1; position:absolute; inset:0; width:100%; height:100%;" />
                 <div class="feed-hud">
-                    <span class="hud-tag">CAM {{ str_pad($camera['id'], 2, '0', STR_PAD_LEFT) }} · {{ strtoupper($camera['name']) }}</span>
+                    <span class="hud-tag">{{ strtoupper($camera['name']) }}</span>
                     <span class="hud-ts" id="main-ts">--:--:--</span>
                 </div>
             </div>

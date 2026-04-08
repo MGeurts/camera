@@ -264,7 +264,13 @@ function buildFsGrid() {
 }
 
 function layoutFsGrid() {
-    const grid   = document.getElementById('fs-grid');
+    const grid = document.getElementById('fs-grid');
+    /* Respect the user-selected column count (1-6).
+       Only auto-calculate when the toolbar is set to AUTO (userCols === null). */
+    if (userCols !== null) {
+        grid.style.setProperty('--cols', userCols);
+        return;
+    }
     const availW = window.innerWidth  - GAP * 2;
     const availH = window.innerHeight - GAP * 2 - 40; /* 40px HUD bar */
     const cols   = calcOptimalCols(availW, availH, CAM_COUNT, 0);
