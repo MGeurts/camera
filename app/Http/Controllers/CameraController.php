@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\CameraService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 
 class CameraController extends Controller
 {
@@ -38,7 +39,24 @@ class CameraController extends Controller
             abort(404);
         }
 
-        $image = $this->cameras->fetchSnapshot($camera);
+        // A browser tab, fullscreen view, and a manual refresh can otherwise
+        // request the same camera at nearly the same instant. A tiny server
+        // cache reduces that duplicate camera traffic without making a feed
+        // feel stale.
+        $cacheKey = "camera_snapshot_{$camera['id']}";
+        $image = Cache::get($cacheKey);
+
+        if ($image === null) {
+            $image = $this->cameras->fetchSnapshot($camera);
+
+            if ($image !== null) {
+                Cache::put(
+                    $cacheKey,
+                    $image,
+                    now()->addSeconds(config('cameras.snapshot_cache_seconds', 1))
+                );
+            }
+        }
 
         if (! $image) {
             return response($this->offlineSvg($camera['name']), 503)

@@ -69,6 +69,11 @@ return [
 
     'snapshot_refresh' => 3000, // milliseconds
 
+    // A short shared cache prevents duplicate proxy requests when several UI
+    // surfaces ask for the same frame at once. Keep this below the refresh
+    // interval so the dashboard remains live.
+    'snapshot_cache_seconds' => (int) env('CAMERA_SNAPSHOT_CACHE_SECONDS', 1),
+
     /*
      * Set to true if your cameras use valid HTTPS certificates.
      * Leave false (default) for the typical self-signed / HTTP setup.

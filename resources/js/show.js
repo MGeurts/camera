@@ -12,6 +12,8 @@ let refreshTimer = null;
 let barTimer     = null;
 let barStart     = null;
 let activeSlot   = 'a';
+let loadInFlight = false;
+let failureCount = 0;
 
 /* ── Double-buffer swap ── */
 function swapBuffer(src) {
@@ -32,18 +34,33 @@ function swapBuffer(src) {
         document.getElementById('stream-status').textContent = 'LIVE';
         document.getElementById('stream-status').className   = 'info-value ok';
         document.getElementById('save-btn').disabled = false;
+        failureCount = 0;
+        finishRefresh();
     };
     back.onerror = () => {
         document.getElementById('stream-status').textContent = 'ERROR';
         document.getElementById('stream-status').className   = 'info-value danger';
         document.getElementById('save-btn').disabled = true;
+        failureCount = Math.min(failureCount + 1, 6);
+        finishRefresh();
     };
     back.src = src;
 }
 
-function refreshNow() {
+function refreshNow(manual = true) {
+    if (loadInFlight || document.visibilityState !== 'visible' || (paused && !manual)) return;
+    loadInFlight = true;
     swapBuffer(`/cameras/${CAM_ID}/snapshot?t=${Date.now()}`);
     resetBar();
+}
+
+function nextDelay() {
+    return failureCount ? Math.min(REFRESH_MS * (2 ** failureCount), 60000) : REFRESH_MS;
+}
+
+function finishRefresh() {
+    loadInFlight = false;
+    if (!paused && document.visibilityState === 'visible') startRefresh(nextDelay());
 }
 
 function updateTs() {
@@ -65,9 +82,9 @@ function resetBar() {
     }, 50);
 }
 
-function startRefresh() {
-    clearInterval(refreshTimer);
-    refreshTimer = setInterval(refreshNow, REFRESH_MS);
+function startRefresh(delay = REFRESH_MS) {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => refreshNow(false), delay);
     resetBar();
 }
 
@@ -75,7 +92,7 @@ function togglePause() {
     paused = !paused;
     const btn = document.getElementById('pause-btn');
     if (paused) {
-        clearInterval(refreshTimer);
+        clearTimeout(refreshTimer);
         clearInterval(barTimer);
         btn.textContent       = '▶ Resume';
         btn.style.borderColor = 'var(--warn-text)';
@@ -156,6 +173,15 @@ async function loadDeviceInfo() {
 document.getElementById('save-btn').disabled = true;
 document.getElementById('refresh-rate-label').textContent = REFRESH_MS >= 60000 ? '1m' : (REFRESH_MS / 1000) + 's';
 startRefresh();
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') {
+        clearTimeout(refreshTimer);
+        clearInterval(barTimer);
+    } else if (!paused && !loadInFlight) {
+        startRefresh();
+    }
+});
 
 /* Expose functions called by Blade onclick attributes */
 window.refreshNow     = refreshNow;

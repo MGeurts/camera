@@ -27,8 +27,8 @@
                 <small>{{ $cameras->count() }} CAMERA{{ $cameras->count() !== 1 ? 'S' : '' }} CONFIGURED</small>
             </div>
             <div class="page-actions">
-                <button class="btn" id="refresh-all-btn" onclick="refreshAll()">↻ REFRESH ALL</button>
-                <button class="btn" onclick="enterFullscreen()" title="Fullscreen">⛶ FULLSCREEN</button>
+                <button type="button" class="btn" id="refresh-all-btn" onclick="refreshAll()">↻ REFRESH ALL</button>
+                <button type="button" class="btn" onclick="enterFullscreen()" title="Open fullscreen view">⛶ FULLSCREEN</button>
             </div>
         </div>
 
@@ -39,6 +39,11 @@
             @endfor
             <button class="col-btn" id="col-btn-auto" onclick="setColumns('auto', true)">AUTO</button>
             <div class="tb-divider"></div>
+            <div class="feed-filter" aria-label="Camera filter">
+                <span class="toolbar-label">SHOW:</span>
+                <button type="button" class="filter-btn active" data-filter="all" onclick="setFilter('all')">ALL</button>
+                <button type="button" class="filter-btn" data-filter="issues" onclick="setFilter('issues')">ISSUES <span id="issue-count">0</span></button>
+            </div>
             <div class="refresh-toggle">
                 <span class="toolbar-label">REFRESH:</span>
                 <label class="toggle-sw">
@@ -57,11 +62,12 @@
                 </select>
                 <button class="rate-reset-btn" id="rate-reset-btn" onclick="resetRefreshRate()" disabled>↺ RESET</button>
             </div>
+            <span class="refresh-summary" id="refresh-summary" aria-live="polite"></span>
         </div>
 
         <div class="camera-grid" id="camera-grid">
             @forelse ($cameras as $camera)
-                <div class="camera-card" id="card-{{ $camera['id'] }}" data-cam-id="{{ $camera['id'] }}">
+                <div class="camera-card" id="card-{{ $camera['id'] }}" data-cam-id="{{ $camera['id'] }}" data-status="checking" tabindex="0" role="link" aria-label="Open {{ $camera['name'] }}">
 
                     <div class="camera-feed">
                         <div class="feed-spinner" id="spinner-{{ $camera['id'] }}">
@@ -73,7 +79,7 @@
                         <div class="feed-overlay">
                             <span class="cam-id-tag">{{ strtoupper($camera['name']) }}</span>
                             <span class="cam-ts-tag" id="ts-{{ $camera['id'] }}">--:--:--</span>
-                            <a class="expand-btn" href="{{ route('cameras.show', $camera['id']) }}" onclick="event.stopPropagation()">⤢</a>
+                            <a class="expand-btn" href="{{ route('cameras.show', $camera['id']) }}" onclick="event.stopPropagation()" aria-label="Open {{ $camera['name'] }}">⤢</a>
                         </div>
                     </div>
 

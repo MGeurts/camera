@@ -5,8 +5,8 @@
 
    STATUS STRATEGY
    No separate /api/cameras/status poll. A camera is ONLINE when
-   its image loads successfully. A camera is OFFLINE when its image
-   fails and a HEAD request to the same URL also fails.
+   its image loads successfully. A camera is OFFLINE when its image fails.
+   Refreshes are queued, limited and paused outside the viewport.
    Status always matches exactly what you see on screen.
    ───────────────────────────────────────────────────────────── */
 
@@ -19,9 +19,17 @@ const INFO_H = 36;
 const ASPECT = 16 / 9;
 
 let autoRefresh   = true;
-let refreshTimers = {};
+const refreshTimers = {};
 let userCols      = null;
 const activeSlot  = {};
+const visibleFeeds = new Set(CAMERAS.map(camera => camera.id));
+const loadingFeeds = new Set();
+const queuedFeeds  = new Set();
+const refreshQueue = [];
+const failures     = {};
+const MAX_CONCURRENT_LOADS = 4;
+let activeLoads = 0;
+let currentFilter = 'all';
 
 /* Per-camera offline tracking */
 const offlineSince = {};  // { [id]: Date }
@@ -73,7 +81,8 @@ function recalc() {
     const availH    = window.innerHeight
                     - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h') || '56')
                     - chromH;
-    applyColumns(calcOptimalCols(availW, Math.max(availH, 120), CAM_COUNT));
+    const displayedCount = document.querySelectorAll('.camera-card:not([hidden])').length || CAM_COUNT;
+    applyColumns(calcOptimalCols(availW, Math.max(availH, 120), displayedCount));
 }
 
 /* ══════════════════════════════════════════════════════
@@ -88,10 +97,12 @@ function fmtDuration(since) {
 
 function markOnline(id) {
     delete offlineSince[id];
+    failures[id] = 0;
     const el   = document.getElementById(`status-${id}`);
     const card = document.getElementById(`card-${id}`);
     if (el)   { el.textContent = '● ONLINE'; el.className = 'badge badge-online'; }
-    if (card) card.classList.remove('offline');
+    if (card) { card.classList.remove('offline'); card.dataset.status = 'online'; }
+    applyFilter();
     if (typeof syncHeaderCount === 'function') syncHeaderCount();
 }
 
@@ -103,7 +114,8 @@ function markOffline(id) {
         el.textContent = `● OFFLINE ${fmtDuration(offlineSince[id])}`;
         el.className   = 'badge badge-offline';
     }
-    if (card) card.classList.add('offline');
+    if (card) { card.classList.add('offline'); card.dataset.status = 'offline'; }
+    applyFilter();
     if (typeof syncHeaderCount === 'function') syncHeaderCount();
 }
 
@@ -118,8 +130,8 @@ setInterval(() => {
 
 /* ══════════════════════════════════════════════════════
    DOUBLE-BUFFER REFRESH
-   onload  → markOnline   (image arrived = camera is up)
-   onerror → HEAD confirm → markOffline if also fails
+   One load per camera is permitted at a time. The queue limits total
+   concurrent image requests and each failure progressively backs off.
 ══════════════════════════════════════════════════════ */
 function onFirstLoad(id) {
     document.getElementById(`spinner-${id}`)?.classList.add('gone');
@@ -128,13 +140,44 @@ function onFirstLoad(id) {
     markOnline(id);
 }
 
-function confirmOffline(id) {
-    fetch(`/cameras/${id}/snapshot?t=${Date.now()}`, { method: 'HEAD' })
-        .then(r => { if (!r.ok) markOffline(id); })
-        .catch(() => markOffline(id));
+function nextDelay(id) {
+    const attempts = failures[id] || 0;
+    return attempts ? Math.min(REFRESH_MS * (2 ** attempts), 60000) : REFRESH_MS;
 }
 
-function refreshFeed(id) {
+function canRefresh(id, force = false) {
+    // While viewing only incidents, continue polling the hidden cards so a
+    // newly failing camera can enter the incident list without a page reload.
+    return force || (autoRefresh && document.visibilityState === 'visible'
+        && (visibleFeeds.has(id) || currentFilter === 'issues'));
+}
+
+function scheduleRefresh(id, delay = REFRESH_MS, force = false) {
+    clearTimeout(refreshTimers[id]);
+    if (!canRefresh(id, force)) return;
+    refreshTimers[id] = setTimeout(() => enqueueRefresh(id, force), delay);
+}
+
+function enqueueRefresh(id, force = false) {
+    if (!canRefresh(id, force) || loadingFeeds.has(id) || queuedFeeds.has(id)) return;
+    queuedFeeds.add(id);
+    refreshQueue.push({ id, force });
+    runRefreshQueue();
+}
+
+function runRefreshQueue() {
+    while (activeLoads < MAX_CONCURRENT_LOADS && refreshQueue.length) {
+        const { id, force } = refreshQueue.shift();
+        queuedFeeds.delete(id);
+        if (!canRefresh(id, force) || loadingFeeds.has(id)) continue;
+        refreshFeed(id, force);
+    }
+}
+
+function refreshFeed(id, force = false) {
+    if (loadingFeeds.has(id)) return;
+    loadingFeeds.add(id);
+    activeLoads++;
     const slot     = activeSlot[id] || 'a';
     const nextSlot = slot === 'a' ? 'b' : 'a';
     const front    = document.getElementById(`feed-${slot}-${id}`);
@@ -147,43 +190,52 @@ function refreshFeed(id) {
         updateTimestamp(id);
         syncFsCell(id, back.src);
         markOnline(id);
+        finishRefresh(id, force);
     };
 
     back.onerror = () => {
-        /* Only confirm via HEAD if we haven't already marked it offline —
-           avoids hammering a known-dead camera with extra requests. */
-        if (!offlineSince[id]) confirmOffline(id);
-        else                   markOffline(id);
+        failures[id] = Math.min((failures[id] || 0) + 1, 6);
+        markOffline(id);
+        finishRefresh(id, force);
     };
 
     back.src = `/cameras/${id}/snapshot?t=${Date.now()}`;
 }
 
+function finishRefresh(id, force) {
+    loadingFeeds.delete(id);
+    activeLoads = Math.max(0, activeLoads - 1);
+    // A manual refresh is a one-off. Subsequent automatic refreshes still
+    // obey viewport visibility, rather than waking hidden cards forever.
+    if (autoRefresh) scheduleRefresh(id, nextDelay(id));
+    runRefreshQueue();
+}
+
 function refreshAll() {
-    CAMERAS.forEach(c => refreshFeed(c.id));
+    CAMERAS.forEach(c => enqueueRefresh(c.id, true));
     const btn = document.getElementById('refresh-all-btn');
     if (btn) {
         btn.textContent = '↻ REFRESHING…';
         btn.disabled    = true;
-        setTimeout(() => { btn.textContent = '↻ REFRESH ALL'; btn.disabled = false; }, 1500);
+        setTimeout(() => { btn.textContent = '↻ REFRESH ALL'; btn.disabled = false; }, 500);
     }
 }
 
 function startAutoRefresh() {
     CAMERAS.forEach(c => {
-        clearInterval(refreshTimers[c.id]);
+        clearTimeout(refreshTimers[c.id]);
         if (!autoRefresh) return;
-        const delay = (c.id - 1) * (REFRESH_MS / Math.max(CAMERAS.length, 1));
-        setTimeout(() => {
-            refreshTimers[c.id] = setInterval(() => refreshFeed(c.id), REFRESH_MS);
-        }, delay);
+        const delay = Math.round(Math.random() * Math.min(REFRESH_MS, 1000));
+        scheduleRefresh(c.id, delay);
     });
+    updateRefreshSummary();
 }
 
 function toggleAutoRefresh(enabled) {
     autoRefresh = enabled;
-    enabled ? startAutoRefresh() : Object.values(refreshTimers).forEach(clearInterval);
+    enabled ? startAutoRefresh() : Object.values(refreshTimers).forEach(clearTimeout);
     updateResetBtn();
+    updateRefreshSummary();
 }
 
 const DEFAULT_REFRESH_MS = 3000;
@@ -193,6 +245,7 @@ function setRefreshRate(ms) {
     localStorage.setItem('hik-refresh', ms);
     if (autoRefresh) startAutoRefresh();
     updateResetBtn();
+    updateRefreshSummary();
 }
 
 function updateResetBtn() {
@@ -214,6 +267,33 @@ function resetRefreshRate() {
     updateResetBtn();
 }
 
+function updateRefreshSummary() {
+    const summary = document.getElementById('refresh-summary');
+    if (!summary) return;
+    const label = REFRESH_MS >= 60000 ? '1 min' : `${REFRESH_MS / 1000} s`;
+    summary.textContent = autoRefresh
+        ? `Visible feeds · every ${label} · max ${MAX_CONCURRENT_LOADS} at once`
+        : 'Auto-refresh paused';
+}
+
+function setFilter(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(button => {
+        button.classList.toggle('active', button.dataset.filter === filter);
+    });
+    applyFilter();
+}
+
+function applyFilter() {
+    const issueCount = document.querySelectorAll('.camera-card[data-status="offline"]').length;
+    const issueLabel = document.getElementById('issue-count');
+    if (issueLabel) issueLabel.textContent = issueCount;
+    document.querySelectorAll('.camera-card').forEach(card => {
+        card.hidden = currentFilter === 'issues' && card.dataset.status !== 'offline';
+    });
+    recalc();
+}
+
 function updateTimestamp(id) {
     const el = document.getElementById(`ts-${id}`);
     if (!el) return;
@@ -227,6 +307,31 @@ document.querySelectorAll('.camera-card').forEach(card => {
         if (e.target.closest('.expand-btn')) return;
         window.location.href = `/cameras/${this.dataset.camId}`;
     });
+    card.addEventListener('keydown', event => {
+        if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('.expand-btn')) {
+            event.preventDefault();
+            window.location.href = `/cameras/${card.dataset.camId}`;
+        }
+    });
+});
+
+const visibilityObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+        const id = parseInt(entry.target.dataset.camId);
+        if (entry.isIntersecting) {
+            visibleFeeds.add(id);
+            if (autoRefresh) enqueueRefresh(id);
+        } else {
+            visibleFeeds.delete(id);
+            clearTimeout(refreshTimers[id]);
+        }
+    });
+}, { rootMargin: '160px' });
+document.querySelectorAll('.camera-card').forEach(card => visibilityObserver.observe(card));
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && autoRefresh) startAutoRefresh();
+    if (document.visibilityState !== 'visible') Object.values(refreshTimers).forEach(clearTimeout);
 });
 
 /* ── Resize ── */
@@ -371,6 +476,7 @@ if (savedRate) {
     if (sel) sel.value = savedRate;
 }
 
+setFilter(currentFilter);
 startAutoRefresh();
 updateResetBtn();
 
@@ -380,6 +486,7 @@ window.toggleAutoRefresh = toggleAutoRefresh;
 window.setRefreshRate    = val => setRefreshRate(parseInt(val));
 window.resetRefreshRate  = resetRefreshRate;
 window.refreshAll        = refreshAll;
+window.setFilter         = setFilter;
 window.enterFullscreen   = enterFullscreen;
 window.exitFullscreen    = exitFullscreen;
 window.onFirstLoad       = onFirstLoad;
